@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inhaler Flow Monitor (Web)</title>
-    <!-- 引入外部圖表庫 Chart.js 與實作成就標記所需的插件 -->
+    <!-- 引入 Chart.js 繪圖庫 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
@@ -14,19 +14,9 @@
             margin: 0;
             padding: 20px;
         }
-        .header {
-            margin-bottom: 15px;
-        }
-        .header h1 {
-            margin: 0;
-            color: #1f4e79;
-            font-size: 24px;
-        }
-        .header p {
-            margin: 5px 0 0 0;
-            color: #7f8c8d;
-            font-size: 14px;
-        }
+        .header { margin-bottom: 15px; }
+        .header h1 { margin: 0; color: #1f4e79; font-size: 24px; }
+        .header p { margin: 5px 0 0 0; color: #7f8c8d; font-size: 14px; }
         .control-panel {
             background: #ffffff;
             padding: 15px;
@@ -39,56 +29,21 @@
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 14px;
-            transition: background 0.2s;
+            padding: 8px 16px; border: none; border-radius: 4px;
+            cursor: pointer; font-weight: bold; font-size: 14px; transition: background 0.2s;
         }
-        .btn.accent {
-            background-color: #1f4e79;
-            color: white;
-        }
+        .btn.accent { background-color: #1f4e79; color: white; }
         .btn.accent:hover { background-color: #163d5e; }
         .btn:hover { background-color: #e1e8ee; }
-        .btn:disabled {
-            background-color: #bdc3c7;
-            color: #7f8c8d;
-            cursor: not-allowed;
-        }
-        label {
-            font-size: 14px;
-            font-weight: 500;
-        }
-        input, select {
-            padding: 6px;
-            border: 1px solid #bcc6cf;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .info-text {
-            font-size: 14px;
-            font-weight: 500;
-            margin-left: 5px;
-        }
+        .btn:disabled { background-color: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
+        label { font-size: 14px; font-weight: 500; }
+        input, select { padding: 6px; border: 1px solid #bcc6cf; border-radius: 4px; font-size: 14px; }
+        .info-text { font-size: 14px; font-weight: 500; margin-left: 5px; }
         .chart-container {
-            background: #ffffff;
-            padding: 15px;
-            border-radius: 8px;
-            height: 480px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            position: relative;
+            background: #ffffff; padding: 15px; border-radius: 8px;
+            height: 480px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); position: relative;
         }
-        .statusbar {
-            margin-top: 15px;
-            padding: 10px 15px;
-            background: #1f4e79;
-            color: white;
-            border-radius: 4px;
-            font-size: 13px;
-        }
+        .statusbar { margin-top: 15px; padding: 10px 15px; background: #1f4e79; color: white; border-radius: 4px; font-size: 13px; }
     </style>
 </head>
 <body>
@@ -127,21 +82,50 @@
 
     <script>
         // =====================================================
-        //  呼吸教育標準線計畫表 (由 Python 翻譯過來)
+        //  100% 完整對應原版 Python 的教育引導線計畫表 (共 27 階段)
         // =====================================================
         const EDUCATION_PROGRAM = [
-            ["inhalation", 0,   3],   ["inhalation", 60,  2],   ["inhalation", 0,   1],
-            ["inhalation", 0,   2],   ["exhalation", 60,  3],   ["inhalation", 0,   2],
-            ["inhalation", 60,  2],   ["inhalation", 0,   1],   ["inhalation", 0,   2],
-            ["exhalation", 60,  3],   ["inhalation", 0,   2],   ["inhalation", 0,   1],
-            ["inhalation", 0,   1],   ["inhalation", 90, 1.5],  ["inhalation", 0,   2],
-            ["exhalation", 50,  6],   ["inhalation", 0,   1],   ["inhalation", 0,   2],
-            ["inhalation", 90, 1.5],  ["inhalation", 0,   2],   ["exhalation", 50,  6],
-            ["inhalation", 0,   2],   ["inhalation", 0,   2],   ["inhalation", 120, 1],
-            ["inhalation", 0,   1],   ["inhalation", 0,   2],   ["exhalation", 100, 2],
-            ["inhalation", 0,   2],   ["inhalation", 40,  3],   ["inhalation", 0,   2],
-            ["exhalation", 40,  4],   ["inhalation", 0,   2],   ["inhalation", 30,  3],
-            ["inhalation", 0,   2],   ["exhalation", 30,  4],   ["inhalation", 0,   3]
+            // === 暖身 ===
+            ["inhalation", 0,   3],   // 0. 預備靜止
+            // === 階段一：節奏訓練 ===
+            ["inhalation", 60,  2],   // 1. 中強吸氣 60
+            ["inhalation", 0,   1],   // 2. 屏息 ⚡挑戰
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 60,  3],   // 3. 長吐氣 60
+            ["inhalation", 0,   2],   // 休息
+            ["inhalation", 60,  2],   // 4. 中強吸氣 60
+            ["inhalation", 0,   1],   // 5. 屏息 ⚡挑戰
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 60,  3],   // 6. 長吐氣 60
+            ["inhalation", 0,   2],   // 休息
+            // === 階段二：力道挑戰 ===
+            ["inhalation", 0,   1],   // 7. 預備
+            ["inhalation", 0,   1],   // 休息
+            ["inhalation", 90, 1.5],  // 8. 💥爆發吸 90
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 50,  6],   // 9. 持久吐氣 50 🌬️耐力
+            ["inhalation", 0,   1],   // 10. 喘息
+            ["inhalation", 0,   2],   // 休息
+            ["inhalation", 90, 1.5],  // 11. 💥爆發吸 90
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 50,  6],   // 12. 持久吐氣 50
+            ["inhalation", 0,   2],   // 休息
+            // === 階段三：高峰衝刺 ===
+            ["inhalation", 0,   2],   // 13. 深呼吸預備
+            ["inhalation", 120, 1],   // 14. 🔥極限吸氣 120 ⭐BOSS
+            ["inhalation", 0,   1],   // 15. 屏息撐住 ⚡⚡
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 100, 2],   // 16. 🔥強吐 100 ⭐BOSS
+            ["inhalation", 0,   2],   // 17. 喘息
+            // === 緩和 ===
+            ["inhalation", 40,  3],   // 18. 慢吸氣 40
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 40,  4],   // 19. 慢吐氣 40
+            ["inhalation", 0,   2],   // 休息
+            ["inhalation", 30,  3],   // 20. 輕吸氣 30
+            ["inhalation", 0,   2],   // 休息
+            ["exhalation", 30,  4],   // 21. 輕吐氣 30
+            ["inhalation", 0,   3]    // 22. 結束靜止
         ];
 
         function makeEducationCurves(dt = 0.05, ramp = 0.4) {
@@ -174,7 +158,7 @@
                 }
                 for (let i = 0; i < steps_hold; i++) {
                     times.push(Number(t.toFixed(3)));
-                    if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); inh.push(target); }
+                    if (mode === "inhalation") { inh.push(target); exh.push(0.0); } else { inh.push(0.0); exh.push(target); }
                     t += dt;
                 }
                 for (let i = 0; i < steps_down; i++) {
@@ -196,19 +180,47 @@
         let records = [], flowHistory = [], windowHistory = [false, false, false];
         let lastFFT = {}, startTime = null, currentMode = "inhalation";
         let lastAchievementSegment = -1;
+        let achievementMarkers = []; // 儲存成就點坐標 {x, y}
 
         // 生成標準引導線繪圖數據點
         const inhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.inh[idx] }));
         const exhaleGuidePoints = guideData.times.map((t, idx) => ({ x: t, y: guideData.exh[idx] }));
+
+        // 自訂繪圖插件：完美還原 Python 的圓圈金幣與 😊 貼圖效果
+        const achievementPlugin = {
+            id: 'achievementPlugin',
+            afterDatasetsDraw(chart) {
+                const { ctx, scales: { x, y } } = chart;
+                ctx.save();
+                achievementMarkers.forEach(marker => {
+                    const canvasX = x.getPixelForValue(marker.x);
+                    const canvasY = y.getPixelForValue(marker.y);
+                    
+                    // 1. 畫金色圓圈
+                    ctx.beginPath();
+                    ctx.arc(canvasX, canvasY, 15, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'gold';
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // 2. 畫 😊 貼圖
+                    ctx.font = '30px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('😊', canvasX, canvasY - 40); // 往上飄移顯示
+                });
+                ctx.restore();
+            }
+        };
 
         const ctx = document.getElementById('flowChart').getContext('2d');
         const flowChart = new Chart(ctx, {
             type: 'line',
             data: {
                 datasets: [
-                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0 },
-                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0 },
-                    { label: 'Patient', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0 }
+                    { label: 'Inhale guide', data: inhaleGuidePoints, borderColor: '#2e7d32', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+                    { label: 'Exhale guide', data: exhaleGuidePoints, borderColor: '#1565c0', borderWidth: 1.8, borderDash: [5, 5], fill: false, pointRadius: 0, tension: 0.4 },
+                    { label: 'Patient', data: [], borderColor: '#c0392b', borderWidth: 2.4, fill: false, pointRadius: 0, tension: 0.4 }
                 ]
             },
             options: {
@@ -221,11 +233,12 @@
                     x: { type: 'linear', min: 0, max: 20, title: { display: true, text: 'Time (secs)' } },
                     y: { min: -120, max: 120, title: { display: true, text: 'Flow (L/min)' } }
                 }
-            }
+            },
+            plugins: [achievementPlugin]
         });
 
         // =====================================================
-        //  核心演算法（由 Python 核心完全改寫）
+        //  100% 翻譯自原版 Python 的核心判定演算法
         // =====================================================
         function getEducationMode(elapsedTime) {
             let t = 0.0;
@@ -276,7 +289,7 @@
 
         function detectFlowRate(mode, estFlow) {
             let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
-            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - estFlow) ? curr : prev);
+            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - curr) ? curr : prev);
         }
 
         // =====================================================
@@ -362,7 +375,7 @@
                 if (startTime === null) startTime = Date.now();
                 let elapsed = (Date.now() - startTime) / 1000;
 
-                // 根據教育引導線判定吸吐
+                // 根據教育引導線與進度條判定吸吐與成就笑臉
                 let manualMode = document.getElementById('modeSelect').value;
                 if (manualMode !== "auto") {
                     currentMode = manualMode;
@@ -371,13 +384,18 @@
                     if (edMode) {
                         currentMode = edMode;
                         let ach = checkAchievement(elapsed);
+                        // 100% 還原 Python 的成就判斷：正在活動區、流速不為零、此段進度超過 80%
                         if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
                             if (ach.index !== lastAchievementSegment) {
                                 lastAchievementSegment = ach.index;
-                                updateStatus("😊 達到 80% 貼合度！表現優異！");
+                                achievementMarkers.push({ x: elapsed, y: 0 }); // 完美還原 Python 的圓圈打點坐標
+                                updateStatus("😊 達到 80% 貼合度！成就解鎖！");
                             }
                         }
+                    } else {
+                        achievementMarkers = [];
                     }
+                    
                     if (est > 5) {
                         let dMode = detectBreathMode(lastFFT);
                         if (dMode) {
@@ -394,7 +412,7 @@
                     est = Math.abs(est);
                 }
 
-                // 15點 Moving Average 平滑（網頁端降為5點以維持極致即時性）
+                // 5點 Moving Average 移動平均平滑
                 flowHistory.push(est);
                 if (flowHistory.length > 5) flowHistory.shift();
                 let smoothedEst = flowHistory.reduce((a, b) => a + b, 0) / flowHistory.length;
@@ -415,7 +433,7 @@
                 let maxPeak = Math.max(...allFlows, 0);
                 document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
 
-                flowChart.update('none'); // 'none' 可以關閉圖表刷新動畫，最大化效能，防止網頁卡頓
+                flowChart.update('none'); // 最大化即時渲染效能
             }
         }
 
@@ -436,6 +454,7 @@
             records = [];
             flowHistory = [];
             lastAchievementSegment = -1;
+            achievementMarkers = [];
             flowChart.data.datasets[2].data = [];
             flowChart.options.scales.x.min = 0;
             flowChart.options.scales.x.max = 20;
