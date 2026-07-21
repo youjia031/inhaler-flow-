@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -37,12 +37,24 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
+        /* 標題列 */
+        .page-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--COL_ACCENT);
+            padding: 12px 0 16px 0;
+            margin-bottom: 4px;
+            border-bottom: 2px solid var(--COL_GRID);
+            letter-spacing: 2px;
+        }
+        
         /* Header */
         .header {
             display: flex;
             align-items: baseline;
             gap: 20px;
-            padding-bottom: 16px;
+            padding: 4px 16px 16px 16px;
             border-bottom: 1px solid var(--COL_GRID);
             margin-bottom: 16px;
         }
@@ -172,6 +184,9 @@
 </head>
 <body>
 <div class="container">
+    <!-- 標題 -->
+    <div class="page-title">🧪 吸入器流量監測器</div>
+
     <!-- Header -->
     <div class="header">
         <h1>Inhaler Flow Monitor</h1>
