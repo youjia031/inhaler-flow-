@@ -234,27 +234,6 @@
 </div>
 
 <script>
-// ============================================================
-//  Log 功能（新增）
-// ============================================================
-async function sendLog(action, data = {}) {
-    try {
-        await fetch('/api/log', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: action,
-                data: data,
-                url: window.location.href,
-                timestamp: new Date().toISOString()
-            })
-        });
-    } catch (e) {
-        // Log 失敗不影響主功能
-        console.log('Log 記錄失敗（不影響操作）');
-    }
-}
-
 // =====================================================
 //  Ideal waveform (0.5 s per point) - from Python
 // =====================================================
@@ -350,9 +329,6 @@ class FlowMonitorApp {
         this.setupChart();
         this.refreshPorts();
         this.bindEvents();
-
-        // Log: 頁面載入
-        sendLog('頁面載入', { version: '1.0' });
     }
     
     // ---------------- Chart Setup ----------------
@@ -445,7 +421,6 @@ class FlowMonitorApp {
             }
             this.portSelect.selectedIndex = 0;
             this.statusMsg.textContent = `Found ${ports.length} port(s)`;
-            sendLog('刷新埠列表', { count: ports.length });
         } catch (e) {
             this.statusMsg.textContent = `Error: ${e.message}`;
         }
@@ -490,12 +465,10 @@ class FlowMonitorApp {
             this.refreshBtn.disabled = true;
             this.statusMsg.textContent = 'Connected. Waiting for 2 consecutive Flow=YES to start plotting...';
             
-            sendLog('連線成功');
             // Start reading
             this.startReading();
         } catch (e) {
             this.statusMsg.textContent = `Connection failed: ${e.message}`;
-            sendLog('連線失敗', { error: e.message });
         }
     }
     
@@ -514,7 +487,6 @@ class FlowMonitorApp {
         this.portSelect.disabled = false;
         this.refreshBtn.disabled = false;
         this.statusMsg.textContent = 'Disconnected';
-        sendLog('斷開連線');
     }
     
     // ---------------- Reading (from Python SerialReader) ----------------
@@ -635,7 +607,6 @@ class FlowMonitorApp {
                 }
                 this.statusMsg.textContent = 'Inhalation detected.';
                 this.prev_flow_yes = flow_yes;
-                sendLog('偵測到吸氣', { flow: est });
                 this.redraw();
                 return;
             }
@@ -724,12 +695,10 @@ class FlowMonitorApp {
             this.measureBtn.textContent = 'Stop';
             this.measureBtn.className = 'danger';
             this.statusMsg.textContent = 'Measuring...';
-            sendLog('開始測量', { patientId: this.patientInput.value });
         } else {
             this.measureBtn.textContent = 'Start';
             this.measureBtn.className = '';
             this.statusMsg.textContent = 'Measurement stopped (waveform frozen).';
-            sendLog('停止測量', { recordCount: this.records.length });
         }
     }
     
@@ -752,7 +721,6 @@ class FlowMonitorApp {
         this.updateRecordCount();
         this.peakValue.textContent = '—';
         this.statusMsg.textContent = 'Cleared.';
-        sendLog('清除資料');
     }
     
     saveData() {
@@ -792,7 +760,6 @@ class FlowMonitorApp {
         link.click();
         
         this.statusMsg.textContent = `Saved: ${default_name}.csv (${this.records.length} records)`;
-        sendLog('儲存 CSV', { patient, recordCount: this.records.length });
     }
     
     // ---------------- Event Binding ----------------
