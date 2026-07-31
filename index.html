@@ -99,11 +99,11 @@
 
     <script>
         // ============================================================
-        //  Log 功能（新增）
+        //  Log 功能（跟 respimat 完全一樣的寫法）
         // ============================================================
         async function sendLog(action, data = {}) {
             try {
-                await fetch('/api/log', {
+                const response = await fetch('/api/log', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -113,9 +113,10 @@
                         timestamp: new Date().toISOString()
                     })
                 });
+                const result = await response.json();
+                console.log('✅ Log 已發送:', action, result);
             } catch (e) {
-                // Log 失敗不影響主功能
-                console.log('Log 記錄失敗（不影響操作）');
+                console.log('⚠️ Log 發送失敗（不影響主功能）:', e.message);
             }
         }
 
@@ -327,7 +328,7 @@
 
         function detectFlowRate(mode, estFlow) {
             let presets = (mode === "inhalation") ? [30, 60, 90] : [60, 90, 120];
-            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - curr) ? curr : prev);
+            return presets.reduce((prev, curr) => Math.abs(curr - estFlow) < Math.abs(prev - estFlow) ? curr : prev);
         }
 
         // =====================================================
@@ -431,7 +432,7 @@
                         if (ach.isActive && est !== 0 && ach.progress >= 0.8) {
                             if (ach.index !== lastAchievementSegment) {
                                 lastAchievementSegment = ach.index;
-                                achievementMarkers.push({ x: elapsed, y: 0 });
+                                achievementMarkers.push({ x: elapsed, y: 0 }); // 完美還原 Python 的圓圈打點坐標
                                 updateStatus("😊 達到 80% 貼合度！成就解鎖！");
                                 sendLog('成就解鎖', { segment: ach.index, progress: ach.progress });
                             }
@@ -477,7 +478,7 @@
                 let maxPeak = Math.max(...allFlows, 0);
                 document.getElementById('peakFlow').innerText = `Peak: ${maxPeak.toFixed(1)} L/min`;
 
-                flowChart.update('none');
+                flowChart.update('none'); // 最大化即時渲染效能
             }
         }
 
@@ -531,7 +532,6 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
             sendLog('儲存 CSV', { patientId, recordCount: records.length });
         }
 
