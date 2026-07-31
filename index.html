@@ -6,6 +6,9 @@
     <title>Inhaler Flow Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+        /* =====================================================
+           Academic color scheme (from Python)
+           ===================================================== */
         :root {
             --COL_BG: #f4f6f8;
             --COL_PANEL: #ffffff;
@@ -16,6 +19,7 @@
             --COL_GRID: #d9e1e8;
             --FONT_FAMILY: "Segoe UI";
         }
+        
         * { box-sizing: border-box; }
         body {
             font-family: var(--FONT_FAMILY), sans-serif;
@@ -23,6 +27,7 @@
             margin: 0;
             padding: 20px;
         }
+        
         .container {
             max-width: 1040px;
             margin: 0 auto;
@@ -31,6 +36,20 @@
             padding: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
+        
+        /* 新增的標題列 */
+        .page-title {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--COL_ACCENT);
+            padding: 12px 0 16px 0;
+            margin-bottom: 8px;
+            border-bottom: 2px solid var(--COL_GRID);
+            letter-spacing: 1px;
+        }
+        
+        /* Header */
         .header {
             display: flex;
             align-items: baseline;
@@ -49,6 +68,8 @@
             color: #7f8c8d;
             font-size: 14px;
         }
+        
+        /* Controls */
         .controls {
             display: flex;
             flex-wrap: wrap;
@@ -110,6 +131,7 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        
         .stats {
             display: flex;
             gap: 24px;
@@ -126,6 +148,8 @@
         .stats strong {
             color: var(--COL_ACCENT);
         }
+        
+        /* Chart */
         .chart-container {
             background: var(--COL_PANEL);
             border: 1px solid var(--COL_GRID);
@@ -139,6 +163,8 @@
             width: 100% !important;
             height: 100% !important;
         }
+        
+        /* Status */
         .status-bar {
             background: var(--COL_ACCENT);
             color: white;
@@ -158,11 +184,18 @@
 </head>
 <body>
 <div class="container">
+    <!-- ===================================================== -->
+    <!-- 新增的標題：吸入器流量監測器 -->
+    <!-- ===================================================== -->
+    <div class="page-title">🧪 吸入器流量監測器</div>
+
+    <!-- Header -->
     <div class="header">
         <h1>Inhaler Flow Monitor</h1>
         <span class="subtitle">Acoustic inhaler flow visualization</span>
     </div>
 
+    <!-- Controls -->
     <div class="controls">
         <div class="control-group">
             <label>USB Port</label>
@@ -170,25 +203,30 @@
             <button id="refreshBtn">Refresh</button>
             <button id="connectBtn" class="primary">Connect</button>
         </div>
+        
         <div class="control-group">
             <label>Patient ID</label>
             <input id="patientInput" placeholder="e.g. P001" value="Demo" style="width:120px;">
         </div>
+        
         <div class="control-group">
             <button id="measureBtn">Start</button>
             <button id="clearBtn">Clear</button>
             <button id="saveBtn" class="primary">Save CSV</button>
         </div>
+        
         <div class="stats">
             <span>Records: <strong id="recordCount">0</strong></span>
             <span>Peak: <strong id="peakValue">—</strong> L/min</span>
         </div>
     </div>
 
+    <!-- Chart -->
     <div class="chart-container">
         <canvas id="flowChart"></canvas>
     </div>
 
+    <!-- Status -->
     <div class="status-bar">
         <span class="status-msg" id="statusMsg">Not connected</span>
         <span class="peak" id="statusPeak"></span>
@@ -212,16 +250,20 @@ async function sendLog(action, data = {}) {
             })
         });
     } catch (e) {
+        // Log 失敗不影響主功能
         console.log('Log 記錄失敗（不影響操作）');
     }
 }
 
-// ============================================================
-//  Ideal waveform
-// ============================================================
+// =====================================================
+//  Ideal waveform (0.5 s per point) - from Python
+// =====================================================
 const IDEAL_FLOW = [0, 40, 40, 40, 40, 20, 5, 0, 0, 0];
 const IDEAL_DT = 0.5;
 
+// =====================================================
+//  Smooth curve (from Python)
+// =====================================================
 function smoothCurve(xs, ys) {
     const n = xs.length;
     if (n < 3) return { x: xs, y: ys };
@@ -230,42 +272,56 @@ function smoothCurve(xs, ys) {
         let lo = Math.max(0, i - 1);
         let hi = Math.min(n, i + 2);
         let sum = 0;
-        for (let j = lo; j < hi; j++) sum += ys[j];
+        for (let j = lo; j < hi; j++) {
+            sum += ys[j];
+        }
         sm.push(sum / (hi - lo));
     }
     return { x: xs, y: sm };
 }
 
+// =====================================================
+//  Generate ideal curve (from Python)
+// =====================================================
 function generateIdealCurve() {
     const xs = IDEAL_FLOW.map((_, i) => i * IDEAL_DT);
     const ys = [...IDEAL_FLOW];
+    // Simple interpolation
     if (xs.length >= 4) {
         const n = 300;
-        const xnew = [], ynew = [];
+        const xnew = [];
+        const ynew = [];
         const step = (xs[xs.length-1] - xs[0]) / (n - 1);
         for (let i = 0; i < n; i++) {
             const t = xs[0] + i * step;
             xnew.push(t);
+            // Linear interpolation
             let idx = 0;
             for (let j = 0; j < xs.length - 1; j++) {
-                if (t >= xs[j] && t <= xs[j+1]) { idx = j; break; }
+                if (t >= xs[j] && t <= xs[j+1]) {
+                    idx = j;
+                    break;
+                }
                 if (j === xs.length - 2) idx = j;
             }
             const x0 = xs[idx], x1 = xs[idx+1];
             const y0 = ys[idx], y1 = ys[idx+1];
             const frac = (t - x0) / (x1 - x0 || 1);
-            ynew.push(Math.max(0, y0 + (y1 - y0) * frac));
+            const val = y0 + (y1 - y0) * frac;
+            ynew.push(Math.max(0, val));
         }
         return { x: xnew, y: ynew };
     }
     return { x: xs, y: ys };
 }
 
-// ============================================================
-//  Main Application
-// ============================================================
+// =====================================================
+//  Main Application (translating Python class)
+// =====================================================
 class FlowMonitorApp {
     constructor() {
+        // State (matching Python)
+        this.prev_flow_yes = false;
         this.window_history = [false, false, false];
         this.reader = null;
         this.measuring = false;
@@ -275,10 +331,10 @@ class FlowMonitorApp {
         this.flows = [];
         this.records = [];
         this.last_fft = null;
-        this.prev_flow_yes = false;
         this.connected = false;
         this.port = null;
-
+        
+        // DOM refs
         this.portSelect = document.getElementById('portSelect');
         this.refreshBtn = document.getElementById('refreshBtn');
         this.connectBtn = document.getElementById('connectBtn');
@@ -289,18 +345,21 @@ class FlowMonitorApp {
         this.statusMsg = document.getElementById('statusMsg');
         this.recordCount = document.getElementById('recordCount');
         this.peakValue = document.getElementById('peakValue');
-
+        
+        // Setup
         this.setupChart();
         this.refreshPorts();
         this.bindEvents();
 
+        // Log: 頁面載入
         sendLog('頁面載入', { version: '1.0' });
     }
-
+    
+    // ---------------- Chart Setup ----------------
     setupChart() {
         const ctx = document.getElementById('flowChart').getContext('2d');
         const ideal = generateIdealCurve();
-
+        
         this.chart = new Chart(ctx, {
             type: 'scatter',
             data: {
@@ -360,7 +419,8 @@ class FlowMonitorApp {
             }
         });
     }
-
+    
+    // ---------------- Ports (from Python) ----------------
     async refreshPorts() {
         try {
             const ports = await navigator.serial.getPorts();
@@ -390,7 +450,8 @@ class FlowMonitorApp {
             this.statusMsg.textContent = `Error: ${e.message}`;
         }
     }
-
+    
+    // ---------------- Connection (from Python) ----------------
     async toggleConnection() {
         if (this.connected) {
             await this.disconnect();
@@ -398,21 +459,23 @@ class FlowMonitorApp {
             await this.connect();
         }
     }
-
+    
     async connect() {
         try {
             const ports = await navigator.serial.getPorts();
             if (ports.length === 0) {
+                // Request user to select a port (browser security)
                 const newPort = await navigator.serial.requestPort();
                 if (!newPort) return;
                 await this.refreshPorts();
                 return this.connect();
             }
-
+            
             this.port = ports[0];
             await this.port.open({ baudRate: 115200 });
             this.connected = true;
-
+            
+            // Reset state (like Python)
             this.clearPlot();
             this.records = [];
             this.last_fft = null;
@@ -420,21 +483,22 @@ class FlowMonitorApp {
             this.measureBtn.textContent = 'Start';
             this.updateRecordCount();
             this.prev_flow_yes = false;
-
+            
             this.connectBtn.textContent = 'Disconnect';
             this.connectBtn.className = 'danger';
             this.portSelect.disabled = true;
             this.refreshBtn.disabled = true;
             this.statusMsg.textContent = 'Connected. Waiting for 2 consecutive Flow=YES to start plotting...';
-
+            
             sendLog('連線成功');
+            // Start reading
             this.startReading();
         } catch (e) {
             this.statusMsg.textContent = `Connection failed: ${e.message}`;
             sendLog('連線失敗', { error: e.message });
         }
     }
-
+    
     async disconnect() {
         if (this.reader) {
             this.reader.cancel();
@@ -452,25 +516,26 @@ class FlowMonitorApp {
         this.statusMsg.textContent = 'Disconnected';
         sendLog('斷開連線');
     }
-
+    
+    // ---------------- Reading (from Python SerialReader) ----------------
     async startReading() {
         if (!this.port) return;
-
+        
         const reader = this.port.readable.getReader();
         this.reader = reader;
         const decoder = new TextDecoder('utf-8');
         let buffer = '';
-
+        
         try {
             while (true) {
                 const { value, done } = await reader.read();
                 if (done) break;
-
+                
                 const chunk = decoder.decode(value, { stream: true });
                 buffer += chunk;
                 const lines = buffer.split('\n');
                 buffer = lines.pop() || '';
-
+                
                 for (const line of lines) {
                     const trimmed = line.trim();
                     if (trimmed) {
@@ -484,45 +549,27 @@ class FlowMonitorApp {
             }
         }
     }
-
-    parseFFT(line) {
-        if (!line.includes('[FFT]')) return null;
-        const bands = {};
-        const regex = /(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g;
-        let m;
-        while ((m = regex.exec(line)) !== null) {
-            const k = parseInt(m[1]);
-            const v = parseFloat(m[2]);
-            if (k >= 1 && k <= 20) bands[k] = v;
-        }
-        return Object.keys(bands).length > 0 ? bands : null;
-    }
-
-    parseDetect(line) {
-        if (!line.includes('[DETECT]')) return null;
-        const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
-        if (!flowMatch) return null;
-        const flow_yes = flowMatch[1].toUpperCase() === 'YES';
-        let est = 0.0;
-        const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
-        if (estMatch) est = parseFloat(estMatch[1]) || 0;
-        let low_e = 0;
-        const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
-        if (lowMatch) low_e = parseInt(lowMatch[1]) || 0;
-        return { flow_yes, est, low_e };
-    }
-
+    
+    // ---------------- Handle Line (from Python _handle_line) ----------------
     handleLine(line) {
         if (!this.measuring) return;
-
+        
+        // Parse FFT
         const fft = this.parseFFT(line);
-        if (fft) { this.last_fft = fft; return; }
-
+        if (fft) {
+            this.last_fft = fft;
+            return;
+        }
+        
+        // Parse DETECT
         const det = this.parseDetect(line);
         if (!det) return;
-
+        
         let { flow_yes, est, low_e } = det;
-
+        
+        // -------------------------------------------------
+        // 1. Noise filtering (from Python)
+        // -------------------------------------------------
         let is_candidate = false;
         if (flow_yes || (low_e > 800000 && est > 0.0)) {
             is_candidate = true;
@@ -532,23 +579,31 @@ class FlowMonitorApp {
                 is_candidate = false;
             }
         }
-
+        
+        // -------------------------------------------------
+        // 2. Sliding window majority (from Python)
+        // -------------------------------------------------
         this.window_history.shift();
         this.window_history.push(is_candidate);
         const true_count = this.window_history.filter(x => x === true).length;
-
+        
         if (true_count >= 2) {
             flow_yes = true;
-            if (est === 0.0 && low_e > 1000000) est = 15.0;
+            if (est === 0.0 && low_e > 1000000) {
+                est = 15.0;
+            }
         } else {
             flow_yes = false;
             est = 0.0;
         }
-
+        
+        // -------------------------------------------------
+        // 3. Record data (from Python)
+        // -------------------------------------------------
         const now = Date.now() / 1000;
         const ts = new Date().toISOString().slice(0, -1);
         const elapsed = this.t0 !== null ? (now - this.t0) : 0;
-
+        
         this.records.push({
             timestamp: ts,
             elapsed: elapsed,
@@ -558,7 +613,10 @@ class FlowMonitorApp {
             fft: this.last_fft || {}
         });
         this.updateRecordCount();
-
+        
+        // -------------------------------------------------
+        // 4. Start plotting logic (from Python)
+        // -------------------------------------------------
         if (!this.started) {
             if (flow_yes && this.prev_flow_yes) {
                 this.started = true;
@@ -584,33 +642,68 @@ class FlowMonitorApp {
             this.prev_flow_yes = flow_yes;
             return;
         }
-
+        
         this.prev_flow_yes = flow_yes;
         const t = now - this.t0;
         this.times.push(t);
         this.flows.push(est);
         this.redraw();
     }
-
+    
+    // ---------------- Parse functions (from Python) ----------------
+    parseFFT(line) {
+        if (!line.includes('[FFT]')) return null;
+        const bands = {};
+        const regex = /(\d+)k\s*:\s*([-+]?\d*\.?\d+)/g;
+        let m;
+        while ((m = regex.exec(line)) !== null) {
+            const k = parseInt(m[1]);
+            const v = parseFloat(m[2]);
+            if (k >= 1 && k <= 20) {
+                bands[k] = v;
+            }
+        }
+        return Object.keys(bands).length > 0 ? bands : null;
+    }
+    
+    parseDetect(line) {
+        if (!line.includes('[DETECT]')) return null;
+        
+        const flowMatch = line.match(/Flow\s*=\s*(YES|no)/i);
+        if (!flowMatch) return null;
+        
+        const flow_yes = flowMatch[1].toUpperCase() === 'YES';
+        let est = 0.0;
+        const estMatch = line.match(/Est\s*=\s*([-+]?\d*\.?\d+)/);
+        if (estMatch) est = parseFloat(estMatch[1]) || 0;
+        
+        let low_e = 0;
+        const lowMatch = line.match(/LowEnergy\s*=\s*([-+]?\d+)/);
+        if (lowMatch) low_e = parseInt(lowMatch[1]) || 0;
+        
+        return { flow_yes, est, low_e };
+    }
+    
+    // ---------------- UI Updates (from Python) ----------------
     updateRecordCount() {
         this.recordCount.textContent = this.records.length;
     }
-
+    
     redraw() {
         if (!this.chart) return;
-
+        
         const ds = this.chart.data.datasets;
         let xs = this.times.slice();
         let ys = this.flows.slice();
-
+        
         if (xs.length >= 3) {
             const smoothed = smoothCurve(xs, ys);
             xs = smoothed.x;
             ys = smoothed.y;
         }
-
+        
         ds[1].data = xs.map((x, i) => ({ x, y: ys[i] || 0 }));
-
+        
         if (this.times.length > 0) {
             const xmax = Math.max(10, this.times[this.times.length - 1] + 1);
             this.chart.options.scales.x.max = xmax;
@@ -623,7 +716,8 @@ class FlowMonitorApp {
         }
         this.chart.update('none');
     }
-
+    
+    // ---------------- Controls (from Python) ----------------
     toggleMeasuring() {
         this.measuring = !this.measuring;
         if (this.measuring) {
@@ -638,7 +732,7 @@ class FlowMonitorApp {
             sendLog('停止測量', { recordCount: this.records.length });
         }
     }
-
+    
     clearPlot() {
         this.t0 = null;
         this.started = false;
@@ -648,7 +742,7 @@ class FlowMonitorApp {
         this.window_history = [false, false, false];
         this.records = [];
         this.last_fft = null;
-
+        
         if (this.chart) {
             this.chart.data.datasets[1].data = [];
             this.chart.options.scales.x.max = 10;
@@ -660,20 +754,21 @@ class FlowMonitorApp {
         this.statusMsg.textContent = 'Cleared.';
         sendLog('清除資料');
     }
-
+    
     saveData() {
         if (this.records.length === 0) {
             alert('No data to save.\nPlease connect and collect data first.');
             return;
         }
-
+        
         const patient = this.patientInput.value.trim() || 'unknown';
         const default_name = patient ? `inhaler_data_${patient}` : 'inhaler_data';
-
+        
+        // Build CSV
         let csv = 'patient_id,timestamp,elapsed_s,flow,est_flow_Lpm,low_energy,';
         for (let k = 1; k <= 20; k++) csv += `${k}kHz,`;
         csv = csv.slice(0, -1) + '\n';
-
+        
         for (const r of this.records) {
             const row = [
                 patient,
@@ -688,17 +783,19 @@ class FlowMonitorApp {
             }
             csv += row.join(',') + '\n';
         }
-
+        
+        // Download
         const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8-sig' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `${default_name}.csv`;
         link.click();
-
+        
         this.statusMsg.textContent = `Saved: ${default_name}.csv (${this.records.length} records)`;
         sendLog('儲存 CSV', { patient, recordCount: this.records.length });
     }
-
+    
+    // ---------------- Event Binding ----------------
     bindEvents() {
         this.refreshBtn.addEventListener('click', () => this.refreshPorts());
         this.connectBtn.addEventListener('click', () => this.toggleConnection());
@@ -708,6 +805,9 @@ class FlowMonitorApp {
     }
 }
 
+// =====================================================
+//  Main
+// =====================================================
 document.addEventListener('DOMContentLoaded', () => {
     new FlowMonitorApp();
 });
