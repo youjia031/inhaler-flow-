@@ -212,7 +212,6 @@ async function sendLog(action, data = {}) {
             })
         });
     } catch (e) {
-        // Log 失敗不影響主功能
         console.log('Log 記錄失敗（不影響操作）');
     }
 }
@@ -295,7 +294,6 @@ class FlowMonitorApp {
         this.refreshPorts();
         this.bindEvents();
 
-        // Log: 頁面載入
         sendLog('頁面載入', { version: '1.0' });
     }
 
@@ -429,7 +427,7 @@ class FlowMonitorApp {
             this.refreshBtn.disabled = true;
             this.statusMsg.textContent = 'Connected. Waiting for 2 consecutive Flow=YES to start plotting...';
 
-            sendLog('連線成功', { port: this.port.getInfo?.() || 'COM port' });
+            sendLog('連線成功');
             this.startReading();
         } catch (e) {
             this.statusMsg.textContent = `Connection failed: ${e.message}`;
